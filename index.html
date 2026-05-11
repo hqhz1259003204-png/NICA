@@ -185,13 +185,15 @@
     <div class="msg" id="f3_msg"></div>
     <button class="btn btn-green" onclick="addToCartWithFuzzy()">查询并加入购物车</button>
     <div class="list" id="f3_cart"></div>
-    <div class="total">总价：¥<span id="f3_total">0.00</span></div>
-    <div class="hr-line"></div>
-    <div class="form-item"><label>价格备注（选填，用于记录大客户折扣等）</label><input type="text" id="priceRemark" placeholder="例如：大客户8折、批发价等"><button class="btn-clear" onclick="clearInput('priceRemark')">×</button></div>
+  <div class="total">总价：¥<span id="f3_total">0.00</span></div>
+<div class="form-item"><label>收款金额（可选，输入后自动计算找零）</label><input type="number" step="0.01" min="0" id="f3_received" placeholder="输入顾客支付金额，留空则跳过" oninput="calculateChange()"><button class="btn-clear" onclick="clearReceivedAmount()">×</button></div>
+<div class="form-item" id="f3_change_box" style="display:none;"><label>找零金额</label><input type="text" id="f3_change" placeholder="0.00" readonly style="background:#e8f5e8; font-weight:bold; color:#4CAF50; font-size:18px; border:2px solid #4CAF50;"></div>
+<div class="hr-line"></div>
+<div class="form-item"><label>价格备注（选填，用于记录大客户折扣等）</label><input type="text" id="priceRemark" placeholder="例如：大客户8折、批发价等"><button class="btn-clear" onclick="clearInput('priceRemark')">×</button></div>
     <div class="form-item"><label>顾客姓名（可选）</label><input type="text" id="customerName" placeholder="选填"><button class="btn-clear" onclick="clearInput('customerName')">×</button></div>
     <div class="form-item"><label>顾客地址（可选）</label><input type="text" id="customerAddr" placeholder="选填"><button class="btn-clear" onclick="clearInput('customerAddr')">×</button></div>
     <div class="form-item"><label>顾客手机号（可选）</label><input type="text" id="customerPhone" placeholder="选填"><button class="btn-clear" onclick="clearInput('customerPhone')">×</button></div>
-    <div class="radio-group"><label><input type="radio" name="printOpt" value="print" checked> 打印小票</label><label><input type="radio" name="printOpt" value="noPrint"> 不打印</label></div>
+<div class="radio-group"><label><input type="radio" name="printOpt" value="print" checked> 打印小票</label><label><input type="radio" name="printOpt" value="noPrint"> 不打印</label></div>
     <button class="btn btn-blue" onclick="pay()">立即结算</button>
     <button class="btn btn-red" onclick="clearCart()">清空购物车</button>
 </div>
@@ -225,9 +227,22 @@
 </div>
 <!-- 6.商品删除 -->
 <div id="page6" class="page">
-    <div class="form-item"><label>商品编码/条码</label><input type="text" id="f6_code" placeholder="输入编码删除"><button class="btn-scan" onclick="openScanModal('f6_code')" title="扫码选择要删除的商品"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H10V6H4V12H2V4A2,2 0 0,1 4,2H12V4M20,2A2,2 0 0,1 22,4V12H20V4H14V2H20M4,20V14H2V20A2,2 0 0,0 4,22H12V20H4M20,20H14V22H20A2,2 0 0,0 22,20V14H20V20M16,8H18V16H16V8M8,8H10V16H8V8M12,8H14V16H12V8Z"/></svg></button><button class="btn-clear" onclick="clearInput('f6_code')">×</button></div>
+    <div class="form-item">
+        <label>商品编码/条码</label>
+        <input type="text" id="f6_code" placeholder="输入编码" oninput="searchGoodsForDelete()">
+        <button class="btn-scan" onclick="openScanModal('f6_code')" title="扫码选择要删除的商品">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H10V6H4V12H2V4A2,2 0 0,1 4,2H12V4M20,2A2,2 0 0,1 22,4V12H20V4H14V2H20M4,20V14H2V20A2,2 0 0,0 4,22H12V20H4M20,20H14V22H20A2,2 0 0,0 22,20V14H20V20M16,8H18V16H16V8M8,8H10V16H8V8M12,8H14V16H12V8Z"/></svg>
+        </button>
+        <button class="btn-clear" onclick="clearInput('f6_code');searchGoodsForDelete()">×</button>
+    </div>
+    <div class="form-item">
+        <label>商品名称关键词</label>
+        <input type="text" id="f6_name" placeholder="输入商品名称关键词" oninput="searchGoodsForDelete()">
+        <button class="btn-clear" onclick="clearInput('f6_name');searchGoodsForDelete()">×</button>
+    </div>
+    <div class="list" id="f6_search_list" style="max-height: 300px; overflow-y:auto;"></div>
     <div class="msg" id="f6_msg"></div>
-    <button class="btn btn-red" onclick="delOneGoods()">删除单个商品</button>
+    <button class="btn btn-red" onclick="delOneGoods()">删除单个商品（精确编码）</button>
     <div class="hr-line"></div>
     <div class="form-item"><label>批量删除（每行一个编码）</label><textarea id="f6_batch" placeholder="001&#10;002"></textarea></div>
     <div class="msg" id="f6_batch_msg"></div>
@@ -242,9 +257,10 @@
 </div>
 <!-- 8.价格修改 -->
 <div id="page8" class="page">
-    <div class="query-row"><div class="query-col"><label>编码/条码</label><input type="text" id="f8_code" placeholder="简码或条码"><button class="btn-scan" onclick="openScanModal('f8_code')" title="扫码查询"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H10V6H4V12H2V4A2,2 0 0,1 4,2H12V4M20,2A2,2 0 0,1 22,4V12H20V4H14V2H20M4,20V14H2V20A2,2 0 0,0 4,22H12V20H4M20,20H14V22H20A2,2 0 0,0 22,20V14H20V20M16,8H18V16H16V8M8,8H10V16H8V8M12,8H14V16H12V8Z"/></svg></button></div><div class="query-col"><label>商品名称</label><input type="text" id="f8_name" placeholder="关键词"></div></div>
+    <div class="query-row"><div class="query-col"><label>编码/条码</label><input type="text" id="f8_code" placeholder="简码或条码" oninput="searchGoodsForEdit()"><button class="btn-scan" onclick="openScanModal('f8_code')" title="扫码查询"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H10V6H4V12H2V4A2,2 0 0,1 4,2H12V4M20,2A2,2 0 0,1 22,4V12H20V4H14V2H20M4,20V14H2V20A2,2 0 0,0 4,22H12V20H4M20,20H14V22H20A2,2 0 0,0 22,20V14H20V20M16,8H18V16H16V8M8,8H10V16H8V8M12,8H14V16H12V8Z"/></svg></button></div><div class="query-col"><label>商品名称</label><input type="text" id="f8_name" placeholder="关键词" oninput="searchGoodsForEdit()"></div></div>
     <button class="btn btn-blue" onclick="searchGoodsForEdit()">查询商品</button>
     <div class="clear-btn-container"><button class="btn-clear-all" onclick="clearPriceEditSearchQuery()">一键清零查询条件</button></div>
+    <div class="list" id="f8_search_list" style="max-height: 300px; overflow-y:auto; display:none;"></div>
     <div class="msg" id="f8_msg"></div>
     <div class="price-edit-box" id="priceEditBox" style="display: none;">
         <div class="form-item"><label>商品名称</label><input type="text" id="f8_name_show" readonly></div>
@@ -327,6 +343,7 @@
     <div class="form-item" id="pick_goods_info" style="display: none; background: #e8f4f8; padding: 10px; border-radius: 4px;"><label>商品信息</label><p id="pick_goods_name" style="font-weight: bold; color: #2196F3;"></p><p id="pick_goods_price" style="color: #4CAF50;"></p><p id="pick_goods_barcode" class="barcode-info"></p></div>
     <div class="query-row"><div class="query-col"><label>数量</label><input type="number" min="1" value="1" id="pick_num"></div><div class="query-col"><label>单价（显示系统价格，可修改）</label><input type="number" step="0.01" min="0" id="pick_price" placeholder="显示系统价格"></div></div>
     <div class="form-item"><label>单品备注（选填，例如：颜色、规格等要求）</label><input type="text" id="pick_item_remark" placeholder="例如：红色10件，蓝色5件"><button class="btn-clear" onclick="clearInput('pick_item_remark')">×</button></div>
+  <div class="list" id="pick_search_list" style="max-height: 300px; overflow-y:auto; display:none;"></div>
     <div class="msg" id="pick_msg"></div>
     <button class="btn btn-green" onclick="addToPickList()">添加到配货单</button>
     <div class="hr-line"></div>
@@ -486,6 +503,53 @@
         <button class="btn btn-red" onclick="clearCurrentSpecialGoods()">删除当前商品所有规则</button>
     </div>
 </div>
+<!-- 19.特价标签打印 -->
+<div id="page19" class="page">
+    <div class="form-item">
+        <label style="font-weight: bold; color: #ff9800; font-size: 16px;">特价标签打印</label>
+        <p style="font-size:12px; color:#666; margin-top:5px;">自由选择商品、设置临时特价，支持2/4/8个标签排版打印</p>
+    </div>
+    <div class="hr-line"></div>
+
+    <!-- 商品搜索区 -->
+    <div class="query-row">
+        <div class="query-col"><label>商品简码/条码</label><input type="text" id="label_search_code" placeholder="输入简码或条码"><button class="btn-scan" onclick="openScanModal('label_search_code')" title="扫码录入"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4,4H10V6H4V12H2V4A2,2 0 0,1 4,2H12V4M20,2A2,2 0 0,1 22,4V12H20V4H14V2H20M4,20V14H2V20A2,2 0 0,0 4,22H12V20H4M20,20H14V22H20A2,2 0 0,0 22,20V14H20V20M16,8H18V16H16V8M8,8H10V16H8V8M12,8H14V16H12V8Z"/></svg></button><button class="btn-clear" onclick="clearInput('label_search_code')">×</button></div>
+        <div class="query-col"><label>商品名称关键词</label><input type="text" id="label_search_name" placeholder="输入商品名称关键词"><button class="btn-clear" onclick="clearInput('label_search_name')">×</button></div>
+    </div>
+    <button class="btn btn-blue" onclick="searchGoodsForLabel()">搜索商品</button>
+    <div class="list" id="label_search_results" style="max-height: 200px; display:none;"></div>
+
+    <!-- 已添加的打印商品列表 -->
+    <div class="hr-line"></div>
+    <div class="form-item"><label style="font-weight: bold;">待打印商品列表（点击商品可设置规则）</label></div>
+    <div class="list" id="label_print_list"></div>
+
+    <!-- 商品规则设置区 -->
+    <div id="label_rule_box" style="display:none; background:#fff3e0; padding:15px; border-radius:6px; margin:10px 0;">
+        <div class="form-item"><label>为 <strong id="label_rule_goods_name">商品</strong> 添加特价规则</label></div>
+        <div class="rule-row" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="number" min="1" value="2" id="label_rule_qty" placeholder="购买数量" style="width:80px;">
+            <input type="number" step="0.01" min="0" id="label_rule_price" placeholder="特价单价" style="width:100px;">
+            <button class="btn btn-orange" onclick="addLabelRule()" style="width:auto; padding:8px 16px;">添加规则</button>
+            <button class="btn btn-gray" onclick="clearLabelRules()" style="width:auto; padding:8px 12px;">清空规则</button>
+        </div>
+        <div class="list" id="label_rules_list"></div>
+        <button class="btn btn-red" onclick="removeLabelGoods()">从打印列表删除该商品</button>
+    </div>
+
+    <!-- 排版与打印 -->
+    <div class="hr-line"></div>
+    <div class="form-item">
+        <label style="font-weight: bold;">打印排版</label>
+        <div class="radio-group">
+            <label><input type="radio" name="label_cols" value="2" checked> 每页2个</label>
+            <label><input type="radio" name="label_cols" value="4"> 每页4个</label>
+            <label><input type="radio" name="label_cols" value="8"> 每页8个</label>
+        </div>
+    </div>
+    <button class="btn btn-blue" onclick="printCustomLabels()">🖨️ 生成并打印标签</button>
+    <div class="msg" id="label_msg"></div>
+</div>
 <!-- 打印模板 -->
 <div id="print_div" style="display:none; font-family: monospace; max-width: 300px; margin: 0 auto;">
     <h3 style="text-align:center; font-size:16px;">收银小票</h3>
@@ -495,8 +559,10 @@
     <hr style="border:1px dashed #ccc;">
     <div id="p_goods" style="font-size:12px;"></div>
     <hr style="border:1px dashed #ccc;">
-    <p style="text-align:right; font-weight:bold; font-size:14px;">总价：¥<span id="p_total"></span></p>
-    <p style="text-align:center; font-size:10px; color:#666;">感谢惠顾</p>
+<p style="text-align:right; font-weight:bold; font-size:14px;">总价：¥<span id="p_total"></span></p>
+<p style="text-align:right; font-weight:bold; font-size:14px;" id="p_received_line">收款：¥<span id="p_received"></span></p>
+<p style="text-align:right; font-weight:bold; font-size:14px; color:#4CAF50;" id="p_change_line">找零：¥<span id="p_change"></span></p>
+<p style="text-align:center; font-size:10px; color:#666;">感谢惠顾</p>
 </div>
 <div id="print_pick_div" style="display:none; font-family: monospace; max-width: 300px; margin: 0 auto;">
     <h3 style="text-align:center; font-size:16px;">配货单</h3>
@@ -514,6 +580,12 @@
 <div id="print_invoice_detail_div" style="display:none; font-family: monospace; max-width: 300px; margin: 0 auto;"><h3 style="text-align:center; font-size:16px;">销售发票明细</h3><p style="font-size:12px;">发票号：<span id="p_invoice_detail_id"></span></p><p style="font-size:12px;">开票时间：<span id="p_invoice_detail_time"></span></p><p style="font-size:12px;">来源订单：<span id="p_invoice_detail_orderid"></span></p><div style="font-size:12px; margin:5px 0; padding:5px; background:#f5f5f5; border-radius:3px;"><p>顾客姓名：<span id="p_invoice_detail_customer_name"></span></p><p>手机号：<span id="p_invoice_detail_customer_phone"></span></p><p>地址：<span id="p_invoice_detail_customer_addr"></span></p></div><hr style="border:1px dashed #ccc;"><table style="width:100%; font-size:12px; border-collapse: collapse;"><thead><tr style="background:#f5f5f5;"><th style="border:1px solid #ddd; padding:4px;">商品</th><th style="border:1px solid #ddd; padding:4px;">条码</th><th style="border:1px solid #ddd; padding:4px;">数量</th><th style="border:1px solid #ddd; padding:4px;">单价</th><th style="border:1px solid #ddd; padding:4px;">小计</th></tr></thead><tbody id="p_invoice_detail_goods"></tbody></table><hr style="border:1px dashed #ccc;"><p style="text-align:right; font-weight:bold; font-size:14px;">总金额：¥<span id="p_invoice_detail_total"></span></p><p style="font-size:12px;">付款状态：<span id="p_invoice_detail_status"></span></p><p style="font-size:12px;">备注：<span id="p_invoice_detail_remark"></span></p><hr style="border:1px dashed #ccc;"><p style="text-align:center; font-size:10px; color:#666;">盖章处：_______________</p></div>
 <div id="print_checking_div" style="display:none; font-family: monospace; max-width: 300px; margin: 0 auto;"><h3 style="text-align:center; font-size:16px;">点货单</h3><p style="font-size:12px;">点货单号：<span id="p_checking_id"></span></p><p style="font-size:12px;">时间：<span id="p_checking_time"></span></p><p style="font-size:12px;">名称：<span id="p_checking_name"></span></p><hr style="border:1px dashed #ccc;"><div id="p_checking_goods" style="font-size:12px;"></div><hr style="border:1px dashed #ccc;"><p style="text-align:right; font-weight:bold; font-size:14px;">总价：¥<span id="p_checking_total"></span></p><p style="text-align:center; font-size:10px; color:#666;">核对完成请签字：_______________</p></div>
 <div id="print_checking_detail_div" style="display:none; font-family: monospace; max-width: 300px; margin: 0 auto;"><h3 style="text-align:center; font-size:16px;">点货单明细</h3><p style="font-size:12px;">点货单号：<span id="p_checking_detail_id"></span></p><p style="font-size:12px;">时间：<span id="p_checking_detail_time"></span></p><p style="font-size:12px;">名称：<span id="p_checking_detail_name"></span></p><hr style="border:1px dashed #ccc;"><table style="width:100%; font-size:12px; border-collapse: collapse;"><thead><tr style="background:#f5f5f5;"><th style="border:1px solid #ddd; padding:4px;">商品</th><th style="border:1px solid #ddd; padding:4px;">条码</th><th style="border:1px solid #ddd; padding:4px;">供应商</th><th style="border:1px solid #ddd; padding:4px;">成本价</th><th style="border:1px solid #ddd; padding:4px;">销售价</th><th style="border:1px solid #ddd; padding:4px;">备注</th></tr></thead><tbody id="p_checking_detail_goods"></tbody></table><hr style="border:1px dashed #ccc;"><p style="text-align:center; font-size:10px; color:#666;">核对完成请签字：_______________</p></div>
+<!-- 特价标签打印模板 -->
+<div id="print_special_label_div" style="display:none;">
+    <div id="label_sheet" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: start; padding: 20px;">
+        <!-- 动态标签将填充至此 -->
+    </div>
+</div>
 <!-- 扫码模态框 -->
 <div id="scanModal" class="scan-modal">
     <div class="scan-container">
@@ -1003,7 +1075,8 @@ let SPECIAL_SELECTED_GOODS = [];
             { id: 'page15', name: '发票管理' },
             { id: 'page16', name: '点货功能' },
             { id: 'page17', name: '批量导出' },
-            { id: 'page18', name: '商品特价' }
+            { id: 'page18', name: '商品特价' },
+            { id: 'page19', name: '特价标签打印' }
         ];
         const menu = $('tabMenu');
         menu.innerHTML = '';
@@ -1097,6 +1170,7 @@ function initFloatButton() {
         if(pageId === 'page16') { showAllCheckingLists(); loadSupplierOptions(); clearCheckingList(); }
         if(pageId === 'page17') { switchBatchTab('orders'); filterOrdersForBatch(); filterPicksForBatch(); filterCheckingsForBatch(); }
         if(pageId === 'page18') { renderSpecialGoodsList(); SPECIAL_SELECTED_GOODS = []; }
+        if(pageId === 'page19') { resetLabelPrintPage(); }
         closeScanModal();
     }
 
@@ -1114,7 +1188,15 @@ function initFloatButton() {
     function clearSingleSalesQuery() { $("single_sales_code").value = ""; $("single_sales_name").value = ""; $("single_start_date").value = ""; $("single_end_date").value = ""; $("single_sales_list").innerHTML = ""; $("single_sales_msg").innerText = ""; showMsg("f1_msg", "单品查询条件已清空"); }
     function clearOrderSearchQuery() { $("searchOrderId").value = ""; $("searchName").value = ""; $("searchPhone").value = ""; $("f4_order_list").innerHTML = ""; showMsg("f1_msg", "订单搜索条件已清空"); }
     function clearPriceHistoryQuery() { $("f7_code").value = ""; $("f7_name").value = ""; $("f7_list").innerHTML = ""; showMsg("f1_msg", "价格历史查询条件已清空"); }
-    function clearPriceEditSearchQuery() { $("f8_code").value = ""; $("f8_name").value = ""; $("priceEditBox").style.display = "none"; CURRENT_EDIT_INDEX = -1; showMsg("f1_msg", "价格修改查询条件已清空"); }
+    function clearPriceEditSearchQuery() {
+    $("f8_code").value = "";
+    $("f8_name").value = "";
+    $("f8_search_list").style.display = "none";
+    $("f8_search_list").innerHTML = "";
+    $("priceEditBox").style.display = "none";
+    CURRENT_EDIT_INDEX = -1;
+    showMsg("f8_msg", "");
+}
     function clearSupplierSearchQuery() { $("f10_scode_bcode").value = ""; $("f10_name").value = ""; $("f10_supplier_key").value = ""; $("f10_remark_key").value = ""; $("f10_delete_start_date").value = ""; $("f10_delete_end_date").value = ""; $("f10_delete_supplier_key").value = ""; $("compare_container").innerHTML = '<div class="no-data">请输入条件查询</div>'; $("goods_title").style.display = "none"; showMsg("f1_msg", "供应商查询条件已清空"); }
     function clearInvoiceSearch() { $("search_invoice_name").value = ""; $("search_invoice_phone").value = ""; $("search_invoice_status").value = ""; $("search_invoice_start_date").value = ""; $("search_invoice_end_date").value = ""; $("invoice_list").innerHTML = ""; showMsg("invoice_create_msg", "发票查询条件已清空"); }
     function clearInvoicePageFilters() { $("invoice_filter_start_date").value = ""; $("invoice_filter_end_date").value = ""; $("invoice_filter_order_id").value = ""; $("invoice_filter_customer_name").value = ""; $("invoice_filter_customer_phone").value = ""; $("invoice_filtered_orders").innerHTML = ""; $("invoice_page_order_select").innerHTML = "<option value=''>-- 请从上方筛选结果中选择订单 --</option>"; showMsg("invoice_page_msg", "筛选条件已清空"); }
@@ -1479,9 +1561,11 @@ function initFloatButton() {
                 小计：¥${subtotal.toFixed(2)}
             </div>`;
         });
-        $("f3_cart").innerHTML = html || '<div class="list-item">购物车为空</div>';
-        $("f3_total").innerText = total.toFixed(2);
-    }
+            $("f3_cart").innerHTML = html || '<div class="list-item">购物车为空</div>';
+    $("f3_total").innerText = total.toFixed(2);
+    // 新增：如果已输入收款金额，自动重算找零
+    if (getVal("f3_received") !== "") calculateChange();
+}
 
     function changeCartPrice(scode) {
         const item = CART.find(i => i.scode === scode);
@@ -1535,92 +1619,161 @@ function initFloatButton() {
         $("priceRemark").value = "";
     }
 
-    // ========== 收银结算 ==========
-    async function pay() {
-        if(CART.length === 0) return alert("购物车为空");
-        const total = parseFloat($("f3_total").innerText);
-        const orderId = "ORD" + Date.now();
-        const now = getDateNow();
-        const printOpt = document.querySelector('input[name="printOpt"]:checked').value;
-        const priceRemark = getVal("priceRemark");
-        const customer = {
-            name: getVal("customerName"),
-            addr: getVal("customerAddr"),
-            phone: getVal("customerPhone"),
-            priceRemark: priceRemark
-        };
+// ========== 新增：计算找零金额 ==========
+function calculateChange() {
+    const received = parseFloat(getVal("f3_received"));
+    const total = parseFloat($("f3_total").innerText) || 0;
+    const changeBox = $("f3_change_box");
+    const changeInput = $("f3_change");
+    
+    if (isNaN(received) || getVal("f3_received") === "") {
+        changeBox.style.display = "none";
+        return;
+    }
+    
+    const change = received - total;
+    changeBox.style.display = "block";
+    changeInput.value = change.toFixed(2);
+    
+    if (change >= 0) {
+        changeInput.style.color = "#4CAF50";
+        changeInput.style.borderColor = "#4CAF50";
+        changeInput.style.background = "#e8f5e8";
+    } else {
+        changeInput.style.color = "#f44336";
+        changeInput.style.borderColor = "#f44336";
+        changeInput.style.background = "#ffebee";
+    }
+}
 
-        try {
-            for (const item of CART) {
-                const goods = GOODS.find(g => g.scode === item.scode);
-                if(goods) {
-                    goods.stock -= item.num;
-                    addStockRecord(goods, "out", item.num, orderId);
-                    await updateData(STORES.GOODS, goods.id, goods);
-                }
+// ========== 新增：清空收款金额并隐藏找零框 ==========
+function clearReceivedAmount() {
+    $("f3_received").value = "";
+    $("f3_change_box").style.display = "none";
+    $("f3_change").value = "";
+}
+
+// ========== 收银结算（支持收款找零） ==========
+async function pay() {
+    if(CART.length === 0) return alert("购物车为空");
+    const total = parseFloat($("f3_total").innerText);
+    const orderId = "ORD" + Date.now();
+    const now = getDateNow();
+    const printOpt = document.querySelector('input[name="printOpt"]:checked').value;
+    const priceRemark = getVal("priceRemark");
+    const customer = {
+        name: getVal("customerName"),
+        addr: getVal("customerAddr"),
+        phone: getVal("customerPhone"),
+        priceRemark: priceRemark
+    };
+
+    // --- 新增：处理收款金额与找零 ---
+    let receivedAmount = null;
+    let changeAmount = null;
+    const receivedStr = getVal("f3_received");
+    if (receivedStr !== "") {
+        receivedAmount = parseFloat(receivedStr);
+        if (isNaN(receivedAmount) || receivedAmount < 0) {
+            return showMsg("f3_msg", "请输入有效的收款金额");
+        }
+        changeAmount = receivedAmount - total;
+        if (changeAmount < 0) {
+            if (!confirm(`收款金额不足！\n\n总价：¥${total.toFixed(2)}\n收款：¥${receivedAmount.toFixed(2)}\n还差：¥${Math.abs(changeAmount).toFixed(2)}\n\n是否继续结算（视为赊账）？`)) {
+                return;
             }
-
-            const newOrder = {
-                orderId, 
-                time: now, 
-                total, 
-                goods: CART.map(item => ({
-                    scode: item.scode,
-                    bcode: item.bcode,
-                    name: item.name,
-                    price: item.price,
-                    originalPrice: item.originalPrice,
-                    num: item.num,
-                    finalPrice: item.price
-                })), 
-                customer
-            };
-            
-            const newOrderId = await addData(STORES.ORDERS, newOrder);
-            newOrder.id = newOrderId;
-            ORDERS.push(newOrder);
-
-            if(printOpt === "print") printOrder(orderId, now, total, CART, customer);
-            clearCart();
-            alert(`结算成功！\n订单号：${orderId}\n总价：¥${total.toFixed(2)}`);
-            renderAlertList();
-            updateDataCount();
-            
-        } catch (error) {
-            console.error("结算失败:", error);
-            alert("结算失败：" + error.message);
         }
     }
 
-    // ========== 打印小票 ==========
-    function printOrder(orderId, time, total, goodsList, customer) {
-        $("p_orderid").innerText = orderId;
-        $("p_time").innerText = time;
-        $("p_total").innerText = total.toFixed(2);
-        
-        let customerHtml = "无顾客信息";
-        if(customer.name || customer.addr || customer.phone || customer.priceRemark) {
-            customerHtml = "";
-            if(customer.name) customerHtml += `姓名：${customer.name}<br>`;
-            if(customer.addr) customerHtml += `地址：${customer.addr}<br>`;
-            if(customer.phone) customerHtml += `手机号：${customer.phone}<br>`;
-            if(customer.priceRemark) customerHtml += `价格备注：${customer.priceRemark}`;
+    try {
+        for (const item of CART) {
+            const goods = GOODS.find(g => g.scode === item.scode);
+            if(goods) {
+                goods.stock -= item.num;
+                addStockRecord(goods, "out", item.num, orderId);
+                await updateData(STORES.GOODS, goods.id, goods);
+            }
         }
-        $("p_customer").innerHTML = customerHtml;
+
+        const newOrder = {
+            orderId, 
+            time: now, 
+            total, 
+            goods: CART.map(item => ({
+                scode: item.scode,
+                bcode: item.bcode,
+                name: item.name,
+                price: item.price,
+                originalPrice: item.originalPrice,
+                num: item.num,
+                finalPrice: item.price
+            })), 
+            customer,
+            // 新增字段
+            receivedAmount: receivedAmount,
+            changeAmount: changeAmount
+        };
         
-        $("p_goods").innerHTML = goodsList.map(g => {
-            const priceChanged = g.price !== g.originalPrice;
-            const priceText = priceChanged ? 
-                `¥${g.originalPrice.toFixed(2)}→<strong>¥${g.price.toFixed(2)}</strong>` : 
-                `¥${g.price.toFixed(2)}`;
-            return `${g.name} (条码：${g.bcode}) x ${g.num}  单价${priceText}`;
-        }).join("<br>");
+        const newOrderId = await addData(STORES.ORDERS, newOrder);
+        newOrder.id = newOrderId;
+        ORDERS.push(newOrder);
+
+        if(printOpt === "print") printOrder(orderId, now, total, CART, customer, receivedAmount, changeAmount);
+        clearCart();
+        // 结算成功后清空收款与找零显示
+        clearReceivedAmount();
+        alert(`结算成功！\n订单号：${orderId}\n总价：¥${total.toFixed(2)}${receivedAmount !== null ? `\n收款：¥${receivedAmount.toFixed(2)}\n找零：¥${changeAmount.toFixed(2)}` : ''}`);
+        renderAlertList();
+        updateDataCount();
         
-        const printWin = window.open("", "_blank");
-        printWin.document.write($("print_div").innerHTML);
-        printWin.document.close();
-        printWin.print();
+    } catch (error) {
+        console.error("结算失败:", error);
+        alert("结算失败：" + error.message);
     }
+}
+
+// ========== 打印小票（支持收款找零显示） ==========
+function printOrder(orderId, time, total, goodsList, customer, receivedAmount, changeAmount) {
+    $("p_orderid").innerText = orderId;
+    $("p_time").innerText = time;
+    $("p_total").innerText = total.toFixed(2);
+    
+    let customerHtml = "无顾客信息";
+    if(customer.name || customer.addr || customer.phone || customer.priceRemark) {
+        customerHtml = "";
+        if(customer.name) customerHtml += `姓名：${customer.name}<br>`;
+        if(customer.addr) customerHtml += `地址：${customer.addr}<br>`;
+        if(customer.phone) customerHtml += `手机号：${customer.phone}<br>`;
+        if(customer.priceRemark) customerHtml += `价格备注：${customer.priceRemark}`;
+    }
+    $("p_customer").innerHTML = customerHtml;
+    
+    $("p_goods").innerHTML = goodsList.map(g => {
+        const priceChanged = g.price !== g.originalPrice;
+        const priceText = priceChanged ? 
+            `¥${g.originalPrice.toFixed(2)}→<strong>¥${g.price.toFixed(2)}</strong>` : 
+            `¥${g.price.toFixed(2)}`;
+        return `${g.name} (条码：${g.bcode}) x ${g.num}  单价${priceText}`;
+    }).join("<br>");
+    
+    // --- 新增：收款与找零显示 ---
+    const receivedLine = $("p_received_line");
+    const changeLine = $("p_change_line");
+    if (receivedAmount !== null && receivedAmount !== undefined && !isNaN(receivedAmount)) {
+        receivedLine.style.display = "block";
+        changeLine.style.display = "block";
+        $("p_received").innerText = receivedAmount.toFixed(2);
+        $("p_change").innerText = changeAmount.toFixed(2);
+    } else {
+        receivedLine.style.display = "none";
+        changeLine.style.display = "none";
+    }
+    
+    const printWin = window.open("", "_blank");
+    printWin.document.write($("print_div").innerHTML);
+    printWin.document.close();
+    printWin.print();
+}
 
     function printSingleOrder(orderId) {
         const order = ORDERS.find(o => o.orderId === orderId);
@@ -1821,6 +1974,60 @@ function initFloatButton() {
         } catch (error) { console.error("批量删除失败:", error); showMsg("f6_batch_msg", "批量删除失败：" + error.message); }
     }
 
+   // 模糊查询商品（用于删除页面）
+function searchGoodsForDelete() {
+    const codeKey = getVal("f6_code").toLowerCase();
+    const nameKey = getVal("f6_name").toLowerCase();
+    if (!codeKey && !nameKey) {
+        $("f6_search_list").innerHTML = "";
+        return;
+    }
+    const results = GOODS.filter(g => {
+        let codeMatch = true, nameMatch = true;
+        if (codeKey) codeMatch = (g.scode && g.scode.toLowerCase().includes(codeKey)) || (g.bcode && g.bcode.toLowerCase().includes(codeKey));
+        if (nameKey) nameMatch = g.name.toLowerCase().includes(nameKey);
+        return codeMatch && nameMatch;
+    });
+    let html = "";
+    if (results.length === 0) {
+        html = '<div class="list-item">没有匹配的商品</div>';
+    } else {
+        results.forEach(g => {
+            html += `<div class="list-item" style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <strong>${g.name}</strong><br>
+                    简码：${g.scode} | 条码：${g.bcode} | 库存：${g.stock}件
+                </div>
+                <button class="btn-red" style="padding:4px 10px;" onclick="deleteGoodsFromSearch('${g.scode}')">删除</button>
+            </div>`;
+        });
+    }
+    $("f6_search_list").innerHTML = html;
+}
+
+// 从搜索结果中直接删除商品
+async function deleteGoodsFromSearch(scode) {
+    const goods = GOODS.find(g => g.scode === scode);
+    if (!goods) return showMsg("f6_msg", "商品不存在");
+    if (!confirm(`确定删除【${goods.name}】吗？`)) return;
+    try {
+        await deleteData(STORES.GOODS, goods.id);
+        const goodsIndex = GOODS.findIndex(g => g.id === goods.id);
+        if (goodsIndex !== -1) GOODS.splice(goodsIndex, 1);
+        const supplierPricesToDelete = SUPPLIER_PRICES.filter(r => r.scode === scode);
+        for (const price of supplierPricesToDelete) {
+            await deleteData(STORES.SUPPLIER_PRICES, price.id);
+        }
+        SUPPLIER_PRICES = SUPPLIER_PRICES.filter(r => r.scode !== scode);
+        showMsg("f6_msg", `已删除【${goods.name}】`);
+        renderAlertList();
+        updateDataCount();
+        searchGoodsForDelete(); // 刷新搜索列表
+    } catch (error) {
+        console.error("删除失败:", error);
+        showMsg("f6_msg", "删除失败：" + error.message);
+    }
+}
     // ========== 价格历史 ==========
     function queryHistory() {
         const codeKey = getVal("f7_code").toLowerCase();
@@ -1842,39 +2049,120 @@ function initFloatButton() {
     }
 
     // ========== 价格修改 ==========
-    function searchGoodsForEdit() {
-        const codeKey = getVal("f8_code").toLowerCase();
-        const nameKey = getVal("f8_name").toLowerCase();
-        const filterGoods = GOODS.filter(g => {
-            let codeMatch = true, nameMatch = true;
-            if (codeKey) codeMatch = (g.scode && g.scode.toLowerCase().includes(codeKey)) || (g.bcode && g.bcode.toLowerCase().includes(codeKey));
-            if (nameKey) nameMatch = g.name.toLowerCase().includes(nameKey);
-            return codeMatch && nameMatch;
-        });
-        if(filterGoods.length !== 1) return showMsg("f8_msg", filterGoods.length === 0 ? "无匹配商品" : "匹配多个商品，请缩小范围");
-        const goods = filterGoods[0];
-        CURRENT_EDIT_INDEX = GOODS.findIndex(g => g.scode === goods.scode);
-        CURRENT_GOODS_SCODE = goods.scode;
-        $("f8_name_show").value = goods.name;
-        $("f8_cost").value = goods.cost.toFixed(2);
-        $("f8_price").value = goods.price.toFixed(2);
-        $("priceEditBox").style.display = "block";
-        const supplierSelect = $("f8_supplier_select");
-        supplierSelect.innerHTML = "<option value=''>-- 请选择供应商 --</option>";
-        const goodsSuppliers = SUPPLIER_PRICES.filter(r => r.scode === goods.scode);
-        if(goodsSuppliers.length > 0) {
-            const uniqueSuppliers = [...new Set(goodsSuppliers.map(r => r.supplier))];
-            uniqueSuppliers.forEach(sup => { const option = document.createElement("option"); option.value = sup; option.textContent = sup; supplierSelect.appendChild(option); });
-            const newOption = document.createElement("option"); newOption.value = "new"; newOption.textContent = "-- 输入新供应商 --"; supplierSelect.appendChild(newOption);
-            document.querySelector('input[name="priceType"][value="supplier"]').disabled = false;
-        } else {
-            const newOption = document.createElement("option"); newOption.value = "new"; newOption.textContent = "-- 输入新供应商 --"; supplierSelect.appendChild(newOption);
-            document.querySelector('input[name="priceType"][value="supplier"]').disabled = false;
-        }
-        supplierSelect.onchange = function() { if(this.value === "new") $("newSupplierBox").style.display = "block"; else $("newSupplierBox").style.display = "none"; };
-        $("newSupplierBox").style.display = "none";
-        document.querySelectorAll('input[name="priceType"]').forEach(radio => { radio.onchange = function() { if(this.value === "supplier") { $("supplierSelectBox").style.display = "block"; $("newSupplierBox").style.display = "none"; if(supplierSelect.value === "") $("newSupplierBox").style.display = "block"; } else { $("supplierSelectBox").style.display = "none"; $("newSupplierBox").style.display = "none"; } }; });
+    // 查询商品（用于价格修改页面）
+function searchGoodsForEdit() {
+    const codeKey = getVal("f8_code").toLowerCase();
+    const nameKey = getVal("f8_name").toLowerCase();
+    const listDiv = $("f8_search_list");
+
+    if (!codeKey && !nameKey) {
+        listDiv.style.display = "none";
+        return;
     }
+
+    const filterGoods = GOODS.filter(g => {
+        let codeMatch = true, nameMatch = true;
+        if (codeKey) codeMatch = (g.scode && g.scode.toLowerCase().includes(codeKey)) || (g.bcode && g.bcode.toLowerCase().includes(codeKey));
+        if (nameKey) nameMatch = g.name.toLowerCase().includes(nameKey);
+        return codeMatch && nameMatch;
+    });
+
+    if (filterGoods.length === 0) {
+        showMsg("f8_msg", "无匹配商品");
+        listDiv.style.display = "none";
+        $("priceEditBox").style.display = "none";
+        return;
+    }
+
+    if (filterGoods.length === 1) {
+        // 唯一商品，直接选择
+        listDiv.style.display = "none";
+        selectGoodsForEdit(filterGoods[0].scode);
+        return;
+    }
+
+    // 多个商品，显示列表
+    let html = "";
+    filterGoods.forEach(g => {
+        html += `<div class="list-item" onclick="selectGoodsForEdit('${g.scode}')" style="cursor: pointer;">
+            <strong>${g.name}</strong><br>
+            简码：${g.scode} | 条码：${g.bcode}<br>
+            售价：¥${g.price.toFixed(2)} | 库存：${g.stock}件
+        </div>`;
+    });
+    listDiv.innerHTML = html;
+    listDiv.style.display = "block";
+    $("priceEditBox").style.display = "none"; // 隐藏编辑框，等待选择
+    showMsg("f8_msg", `找到 ${filterGoods.length} 个商品，请点击选择`);
+}
+
+// 选中商品后加载编辑信息
+function selectGoodsForEdit(scode) {
+    const goods = GOODS.find(g => g.scode === scode);
+    if (!goods) return;
+
+    // 隐藏搜索结果列表
+    $("f8_search_list").style.display = "none";
+    showMsg("f8_msg", "");
+
+    // 设置全局编辑索引
+    CURRENT_EDIT_INDEX = GOODS.findIndex(g => g.scode === goods.scode);
+    CURRENT_GOODS_SCODE = goods.scode;
+
+    // 填充编辑框
+    $("f8_name_show").value = goods.name;
+    $("f8_cost").value = goods.cost.toFixed(2);
+    $("f8_price").value = goods.price.toFixed(2);
+    $("priceEditBox").style.display = "block";
+
+    // 处理供应商选项（保留原逻辑）
+    const supplierSelect = $("f8_supplier_select");
+    supplierSelect.innerHTML = "<option value=''>-- 请选择供应商 --</option>";
+    const goodsSuppliers = SUPPLIER_PRICES.filter(r => r.scode === goods.scode);
+    if (goodsSuppliers.length > 0) {
+        const uniqueSuppliers = [...new Set(goodsSuppliers.map(r => r.supplier))];
+        uniqueSuppliers.forEach(sup => {
+            const option = document.createElement("option");
+            option.value = sup;
+            option.textContent = sup;
+            supplierSelect.appendChild(option);
+        });
+        const newOption = document.createElement("option");
+        newOption.value = "new";
+        newOption.textContent = "-- 输入新供应商 --";
+        supplierSelect.appendChild(newOption);
+        document.querySelector('input[name="priceType"][value="supplier"]').disabled = false;
+    } else {
+        const newOption = document.createElement("option");
+        newOption.value = "new";
+        newOption.textContent = "-- 输入新供应商 --";
+        supplierSelect.appendChild(newOption);
+        document.querySelector('input[name="priceType"][value="supplier"]').disabled = false;
+    }
+    supplierSelect.onchange = function() {
+        if (this.value === "new") $("newSupplierBox").style.display = "block";
+        else $("newSupplierBox").style.display = "none";
+    };
+    $("newSupplierBox").style.display = "none";
+
+    // 绑定价格类型切换事件
+    document.querySelectorAll('input[name="priceType"]').forEach(radio => {
+        radio.onchange = function() {
+            if (this.value === "supplier") {
+                $("supplierSelectBox").style.display = "block";
+                $("newSupplierBox").style.display = "none";
+                if (supplierSelect.value === "") $("newSupplierBox").style.display = "block";
+            } else {
+                $("supplierSelectBox").style.display = "none";
+                $("newSupplierBox").style.display = "none";
+            }
+        };
+    });
+
+    // 更新输入框显示已选商品
+    $("f8_code").value = goods.scode;
+    $("f8_name").value = goods.name;
+}
 
     async function savePriceEdit() {
         if(CURRENT_EDIT_INDEX === -1) return showMsg("f8_msg", "请先查询商品");
@@ -2173,39 +2461,83 @@ function initFloatButton() {
 
     // ========== 配货单功能 ==========
     function searchGoodsForPick() {
-        const codeKey = getVal("pick_code").toLowerCase();
-        const nameKey = getVal("pick_name").toLowerCase();
-        if (!codeKey && !nameKey) { clearPickInputs(); return; }
-        const matchedGoods = GOODS.filter(g => {
-            let codeMatch = true, nameMatch = true;
-            if (codeKey) codeMatch = (g.scode && g.scode.toLowerCase().includes(codeKey)) || (g.bcode && g.bcode.toLowerCase().includes(codeKey));
-            if (nameKey) nameMatch = g.name.toLowerCase().includes(nameKey);
-            return codeMatch && nameMatch;
-        });
-        if (matchedGoods.length === 0) { showMsg("pick_msg", "未找到匹配的商品"); clearPickInputs(); return; }
-        if (matchedGoods.length > 1) { showMsg("pick_msg", `找到多个商品 (${matchedGoods.length})，请精确输入`); clearPickInputs(); return; }
-        const goods = matchedGoods[0];
-        $("pick_code").value = goods.scode;
-        $("pick_goods_name").innerText = goods.name;
-        $("pick_goods_price").innerText = `系统售价：¥${goods.price.toFixed(2)}`;
-        $("pick_goods_barcode").innerText = `商品条码：${goods.bcode}`;
-        $("pick_price").value = goods.price.toFixed(2);
-        $("pick_goods_info").style.display = "block";
-        showMsg("pick_msg", `已选择商品：${goods.name}`);
-    }
-
-    function clearPickInputs() {
-        $("pick_goods_info").style.display = "none";
-        $("pick_num").value = 1;
-        $("pick_price").value = "";
-        $("pick_item_remark").value = "";
-    }
-
-    function clearPickCode() {
-        $("pick_code").value = "";
-        $("pick_name").value = "";
+    const codeKey = getVal("pick_code").toLowerCase();
+    const nameKey = getVal("pick_name").toLowerCase();
+    if (!codeKey && !nameKey) {
         clearPickInputs();
+        $("pick_search_list").style.display = "none";
+        return;
     }
+    const matchedGoods = GOODS.filter(g => {
+        let codeMatch = true, nameMatch = true;
+        if (codeKey) codeMatch = (g.scode && g.scode.toLowerCase().includes(codeKey)) || (g.bcode && g.bcode.toLowerCase().includes(codeKey));
+        if (nameKey) nameMatch = g.name.toLowerCase().includes(nameKey);
+        return codeMatch && nameMatch;
+    });
+
+    if (matchedGoods.length === 0) {
+        showMsg("pick_msg", "未找到匹配的商品");
+        clearPickInputs();
+        $("pick_search_list").style.display = "none";
+        return;
+    }
+
+    if (matchedGoods.length === 1) {
+        // 唯一商品，直接选择
+        $("pick_search_list").style.display = "none";
+        selectGoodsForPickFromList(matchedGoods[0].scode);
+        return;
+    }
+
+    // 多个商品，显示列表
+    let html = "";
+    matchedGoods.forEach(g => {
+        html += `<div class="list-item" onclick="selectGoodsForPickFromList('${g.scode}')" style="cursor: pointer;">
+            <strong>${g.name}</strong><br>
+            简码：${g.scode} | 条码：${g.bcode}<br>
+            售价：¥${g.price.toFixed(2)} | 库存：${g.stock}件
+        </div>`;
+    });
+    $("pick_search_list").innerHTML = html;
+    $("pick_search_list").style.display = "block";
+    $("pick_goods_info").style.display = "none"; // 隐藏单个商品信息框
+    showMsg("pick_msg", `找到 ${matchedGoods.length} 个商品，请点击选择`);
+}
+
+// 从搜索列表中选择商品
+function selectGoodsForPickFromList(scode) {
+    const goods = GOODS.find(g => g.scode === scode);
+    if (!goods) return;
+
+    // 隐藏列表
+    $("pick_search_list").style.display = "none";
+    showMsg("pick_msg", "");
+
+    // 填充输入框和商品信息
+    $("pick_code").value = goods.scode;
+    $("pick_name").value = goods.name;      // 同步显示完整名称
+    $("pick_goods_name").innerText = goods.name;
+    $("pick_goods_price").innerText = `系统售价：¥${goods.price.toFixed(2)}`;
+    $("pick_goods_barcode").innerText = `商品条码：${goods.bcode}`;
+    $("pick_price").value = goods.price.toFixed(2);
+    $("pick_goods_info").style.display = "block";
+    $("pick_msg").innerText = `已选择商品：${goods.name}`;
+}
+
+function clearPickInputs() {
+    $("pick_goods_info").style.display = "none";
+    $("pick_search_list").style.display = "none";
+    $("pick_search_list").innerHTML = "";
+    $("pick_num").value = 1;
+    $("pick_price").value = "";
+    $("pick_item_remark").value = "";
+}
+
+function clearPickCode() {
+    $("pick_code").value = "";
+    $("pick_name").value = "";
+    clearPickInputs();
+}
 
     function addToPickList() {
         const code = getVal("pick_code");
@@ -2300,33 +2632,60 @@ function initFloatButton() {
     }
 
     async function savePickList() {
-        if (PICK_LIST_ITEMS.length === 0) return showMsg("pick_msg", "配货单为空");
-        const listName = getVal("pick_list_name");
-        if (!listName) return showMsg("pick_msg", "请输入配货单名称");
-        try {
-            const pickId = "PICK" + Date.now();
-            const now = getDateNow();
-            const pickList = {
-                pickId: pickId, name: listName, time: now,
-                items: PICK_LIST_ITEMS.map(item => ({
-                    scode: item.scode, bcode: item.bcode, name: item.name,
-                    price: item.price, originalPrice: item.originalPrice,
-                    num: item.num, stock: item.stock, remark: item.remark, time: item.time || now
-                }))
-            };
-            const newId = await addData(STORES.PICK_LISTS, pickList);
-            pickList.id = newId;
-            PICK_LISTS.push(pickList);
-            showMsg("pick_msg", `配货单"${listName}"保存成功！`);
-            showAllPickLists();
-            PICK_LIST_ITEMS = [];
-            renderPickList();
-            $("pick_list_name").value = "";
-        } catch (error) {
-            console.error("保存配货单失败:", error);
-            showMsg("pick_msg", "保存失败：" + error.message);
+    if (PICK_LIST_ITEMS.length === 0) return showMsg("pick_msg", "配货单为空");
+    const listName = getVal("pick_list_name");
+    if (!listName) return showMsg("pick_msg", "请输入配货单名称");
+
+    // 再次检查所有商品的库存是否足够
+    for (const item of PICK_LIST_ITEMS) {
+        const goods = GOODS.find(g => g.scode === item.scode);
+        if (!goods) {
+            return showMsg("pick_msg", `商品【${item.name}】已不存在`);
+        }
+        if (goods.stock < item.num) {
+            return showMsg("pick_msg", `商品【${item.name}】库存不足，当前库存：${goods.stock}件`);
         }
     }
+
+    try {
+        const pickId = "PICK" + Date.now();
+        const now = getDateNow();
+
+        // 保存配货单记录
+        const pickList = {
+            pickId: pickId, name: listName, time: now,
+            items: PICK_LIST_ITEMS.map(item => ({
+                scode: item.scode, bcode: item.bcode, name: item.name,
+                price: item.price, originalPrice: item.originalPrice,
+                num: item.num, stock: item.stock, remark: item.remark, time: item.time || now
+            }))
+        };
+        const newId = await addData(STORES.PICK_LISTS, pickList);
+        pickList.id = newId;
+        PICK_LISTS.push(pickList);
+
+        // 扣除库存并记录出库
+        for (const item of PICK_LIST_ITEMS) {
+            const goods = GOODS.find(g => g.scode === item.scode);
+            if (goods) {
+                goods.stock -= item.num;
+                addStockRecord(goods, "out", item.num, pickId);
+                await updateData(STORES.GOODS, goods.id, goods);
+            }
+        }
+
+        showMsg("pick_msg", `配货单"${listName}"保存成功！`);
+        showAllPickLists();
+        PICK_LIST_ITEMS = [];
+        renderPickList();
+        $("pick_list_name").value = "";
+        renderAlertList();
+        updateDataCount();
+    } catch (error) {
+        console.error("保存配货单失败:", error);
+        showMsg("pick_msg", "保存失败：" + error.message);
+    }
+}
 
     function searchPickLists() {
         const startDate = getVal("pick_search_start_date");
@@ -2363,17 +2722,34 @@ function initFloatButton() {
     }
 
     async function deletePickList(pickId) {
-        if (!confirm("确定删除此配货单吗？此操作不可恢复！")) return;
-        try {
-            await deleteData(STORES.PICK_LISTS, pickId);
-            PICK_LISTS = PICK_LISTS.filter(list => list.id !== pickId);
-            showAllPickLists();
-            showMsg("pick_msg", "配货单已删除");
-        } catch (error) {
-            console.error("删除配货单失败:", error);
-            showMsg("pick_msg", "删除失败：" + error.message);
+    if (!confirm("确定删除此配货单吗？此操作不可恢复！\n删除后对应商品的库存将自动加回。")) return;
+    try {
+        const pickList = PICK_LISTS.find(list => list.id === pickId);
+        if (!pickList) return showMsg("pick_msg", "配货单不存在");
+
+        // 恢复所有商品的库存
+        for (const item of pickList.items) {
+            const goods = GOODS.find(g => g.scode === item.scode);
+            if (goods) {
+                goods.stock += item.num;
+                addStockRecord(goods, "in", item.num, `取消配货单 ${pickList.pickId}`);
+                await updateData(STORES.GOODS, goods.id, goods);
+            }
         }
+
+        // 删除配货单记录
+        await deleteData(STORES.PICK_LISTS, pickId);
+        PICK_LISTS = PICK_LISTS.filter(list => list.id !== pickId);
+
+        showAllPickLists();
+        showMsg("pick_msg", "配货单已删除，库存已恢复");
+        renderAlertList();
+        updateDataCount();
+    } catch (error) {
+        console.error("删除配货单失败:", error);
+        showMsg("pick_msg", "删除失败：" + error.message);
     }
+}
 
     function printPickList() {
         if (PICK_LIST_ITEMS.length === 0) return alert("配货单为空");
@@ -3842,6 +4218,181 @@ function exportSpecialRulesToWPS() {
             alert("数据修复失败：" + error.message);
         }
     }
+// ========== 特价标签打印功能（自主选择版） ==========
+let LABEL_PRINT_GOODS = [];       // 待打印商品数组
+let CURRENT_LABEL_GOODS_INDEX = -1;
+
+function resetLabelPrintPage() {
+    renderLabelPrintList();
+    $('label_rule_box').style.display = 'none';
+    $('label_search_results').style.display = 'none';
+    $('label_search_code').value = '';
+    $('label_search_name').value = '';
+}
+
+function searchGoodsForLabel() {
+    const codeKey = getVal('label_search_code').toLowerCase();
+    const nameKey = getVal('label_search_name').toLowerCase();
+    if (!codeKey && !nameKey) {
+        $('label_search_results').style.display = 'none';
+        return;
+    }
+    const matched = GOODS.filter(g => {
+        let codeMatch = true, nameMatch = true;
+        if (codeKey) codeMatch = (g.scode && g.scode.toLowerCase().includes(codeKey)) || (g.bcode && g.bcode.toLowerCase().includes(codeKey));
+        if (nameKey) nameMatch = g.name.toLowerCase().includes(nameKey);
+        return codeMatch && nameMatch;
+    }).slice(0, 10);
+    
+    let html = '';
+    if (matched.length === 0) {
+        html = '<div class="list-item">无匹配商品</div>';
+    } else {
+        matched.forEach(g => {
+            html += `<div class="list-item" onclick="addGoodsToLabel('${g.scode}')" style="cursor:pointer;">
+                <strong>${g.name}</strong><br>
+                简码：${g.scode} | 条码：${g.bcode}<br>
+                系统售价：¥${g.price.toFixed(2)}
+            </div>`;
+        });
+    }
+    $('label_search_results').innerHTML = html;
+    $('label_search_results').style.display = 'block';
+}
+
+function addGoodsToLabel(scode) {
+    const goods = GOODS.find(g => g.scode === scode);
+    if (!goods) return;
+    if (LABEL_PRINT_GOODS.some(item => item.scode === scode)) {
+        showMsg('label_msg', '该商品已在打印列表中');
+        return;
+    }
+    LABEL_PRINT_GOODS.push({
+        scode: goods.scode,
+        bcode: goods.bcode,
+        name: goods.name,
+        price: goods.price,
+        rules: []
+    });
+    $('label_search_results').style.display = 'none';
+    renderLabelPrintList();
+    showMsg('label_msg', `已添加【${goods.name}】到打印列表`);
+}
+
+function renderLabelPrintList() {
+    let html = '';
+    if (LABEL_PRINT_GOODS.length === 0) {
+        html = '<div class="list-item">尚未添加商品，请先搜索并添加</div>';
+    } else {
+        LABEL_PRINT_GOODS.forEach((item, index) => {
+            const ruleSummary = item.rules.map(r => `${r.qty}个 ¥${r.specialPrice.toFixed(2)}`).join(' / ') || '无规则';
+            html += `<div class="list-item" onclick="editLabelGoods(${index})" style="cursor:pointer;">
+                <strong>${item.name}</strong> (${item.scode})<br>
+                原价：¥${item.price.toFixed(2)}<br>
+                特价规则：${ruleSummary}
+            </div>`;
+        });
+    }
+    $('label_print_list').innerHTML = html;
+}
+
+function editLabelGoods(index) {
+    CURRENT_LABEL_GOODS_INDEX = index;
+    const item = LABEL_PRINT_GOODS[index];
+    $('label_rule_goods_name').innerText = item.name;
+    $('label_rule_qty').value = 2;
+    $('label_rule_price').value = '';
+    $('label_rule_box').style.display = 'block';
+    renderLabelRules();
+}
+
+function renderLabelRules() {
+    const item = LABEL_PRINT_GOODS[CURRENT_LABEL_GOODS_INDEX];
+    let html = '';
+    if (item.rules.length === 0) {
+        html = '<div class="list-item">暂无规则，请在下方添加</div>';
+    } else {
+        item.rules.forEach((rule, idx) => {
+            html += `<div class="special-rule-item">
+                购买 <strong>${rule.qty}</strong> 个 → 特价 <strong>¥${rule.specialPrice.toFixed(2)}</strong>
+                <button class="btn-red" style="float:right; padding:4px 8px;" onclick="removeLabelRule(${idx})">删除</button>
+            </div>`;
+        });
+    }
+    $('label_rules_list').innerHTML = html;
+}
+
+function addLabelRule() {
+    if (CURRENT_LABEL_GOODS_INDEX === -1) return;
+    const qty = parseInt(getVal('label_rule_qty')) || 0;
+    const price = getNum('label_rule_price');
+    if (qty < 1 || price < 0) {
+        showMsg('label_msg', '请输入有效的数量和价格');
+        return;
+    }
+    const item = LABEL_PRINT_GOODS[CURRENT_LABEL_GOODS_INDEX];
+    const existRule = item.rules.find(r => r.qty === qty);
+    if (existRule) {
+        existRule.specialPrice = price;
+    } else {
+        item.rules.push({ qty, specialPrice: price });
+    }
+    renderLabelRules();
+    renderLabelPrintList();
+}
+
+function removeLabelRule(ruleIndex) {
+    const item = LABEL_PRINT_GOODS[CURRENT_LABEL_GOODS_INDEX];
+    item.rules.splice(ruleIndex, 1);
+    renderLabelRules();
+    renderLabelPrintList();
+}
+
+function clearLabelRules() {
+    if (!confirm('确定清空该商品的所有规则吗？')) return;
+    LABEL_PRINT_GOODS[CURRENT_LABEL_GOODS_INDEX].rules = [];
+    renderLabelRules();
+    renderLabelPrintList();
+}
+
+function removeLabelGoods() {
+    if (!confirm('确定删除该商品吗？')) return;
+    LABEL_PRINT_GOODS.splice(CURRENT_LABEL_GOODS_INDEX, 1);
+    CURRENT_LABEL_GOODS_INDEX = -1;
+    $('label_rule_box').style.display = 'none';
+    renderLabelPrintList();
+}
+
+function printCustomLabels() {
+    if (LABEL_PRINT_GOODS.length === 0) {
+        showMsg('label_msg', '请先添加商品');
+        return;
+    }
+    const cols = parseInt(document.querySelector('input[name="label_cols"]:checked').value);
+    const cardWidth = cols === 2 ? '45%' : cols === 4 ? '22%' : '11%';
+    
+    let labelsHtml = '';
+    LABEL_PRINT_GOODS.forEach(item => {
+        const ruleText = item.rules.length > 0 ? item.rules.map(r => `${r.qty}个 ¥${r.specialPrice.toFixed(2)}`).join('<br>') : '';
+        labelsHtml += `<div style="border:1px solid #ccc; padding:8px; margin:5px; width:${cardWidth}; text-align:center; background:#fff; box-sizing:border-box;">
+            <div style="font-weight:bold; font-size:14px;">${item.name}</div>
+            <div style="font-size:11px; color:#666;">条码：${item.bcode}</div>
+            <div style="font-size:12px; text-decoration:line-through; color:#999;">原价：¥${item.price.toFixed(2)}</div>
+            <div style="font-size:12px; color:#ff5722; margin-top:3px;">${ruleText || '无特价'}</div>
+        </div>`;
+    });
+
+    $('label_sheet').innerHTML = labelsHtml;
+    
+    const printWin = window.open('', '_blank', 'width=800,height=600');
+    printWin.document.write('<html><head><title>特价标签打印</title>');
+    printWin.document.write('<style>@page { size: A4; margin: 10mm; } body { font-family: sans-serif; margin:0; padding:0; }</style>');
+    printWin.document.write('</head><body>');
+    printWin.document.write($('label_sheet').innerHTML);
+    printWin.document.write('</body></html>');
+    printWin.document.close();
+    printWin.print();
+}
     </script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </body>
